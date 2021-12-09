@@ -17,7 +17,7 @@ class Wappalyzer
         'Ruby on Rails',
         'Django', 'Flask',
         'Microsoft ASP.NET',
-        'WordPress', 'WooCommerce', 'Drupal', 'Magento', 'Prestashop', 'TYPO3 CMS', 'OpenCart', 'Moodle', 'Nextcloud',
+        'WordPress', 'Joomla', 'WooCommerce', 'Drupal', 'Magento', 'Prestashop', 'TYPO3 CMS', 'OpenCart', 'Moodle', 'Nextcloud',
     ];
 
     public function __construct(array $technologies = [])
@@ -173,7 +173,7 @@ class Wappalyzer
     {
         $patterns = $this->parsePatterns($technology['url'] ?? '');
         foreach ($patterns as $pattern) {
-            if (preg_match("/{$pattern}/i", $url)) {
+            if (preg_match("~{$pattern}~i", $url)) {
                 return true;
             }
         }
@@ -184,7 +184,7 @@ class Wappalyzer
     {
         $patterns = $this->parsePatterns($technology['xhr'] ?? '', false);
         foreach ($patterns as $pattern) {
-            if (preg_match("/{$pattern}/i", $body)) {
+            if (preg_match("~{$pattern}~i", $body)) {
                 return true;
             }
         }
@@ -195,7 +195,7 @@ class Wappalyzer
     {
         $patterns = $this->parsePatterns($technology['html'] ?? '', false);
         foreach ($patterns as $pattern) {
-            if (preg_match("/{$pattern}/i", $body)) {
+            if (preg_match("~{$pattern}~i", $body)) {
                 return true;
             }
         }
@@ -207,7 +207,7 @@ class Wappalyzer
         $patterns = $this->parsePatterns($technology['scriptSrc'] ?? '');
         foreach ($patterns as $pattern) {
             foreach ($scripts as $script) {
-                if (preg_match("/src=[\"'].*{$pattern}.*[\"']/i", $script)) {
+                if (preg_match("~src=[\"'].*{$pattern}.*[\"']~i", $script)) {
                     return true;
                 }
             }
@@ -220,7 +220,7 @@ class Wappalyzer
         $patterns = $this->parsePatterns($technology['meta'] ?? '');
         foreach ($patterns as $tagName => $pattern) {
             $tagName = strtolower($tagName);
-            if (isset($metaTags[$tagName]) && preg_match("/{$pattern}/i", $metaTags[$tagName])) {
+            if (isset($metaTags[$tagName]) && preg_match("~{$pattern}~i", $metaTags[$tagName])) {
                 return true;
             }
         }
@@ -244,8 +244,8 @@ class Wappalyzer
         $patterns = $this->parsePatterns($technology['cookies'] ?? '');
         foreach ($patterns as $cookieName => $pattern) {
             $cookieName = strtolower($cookieName);
-            if (isset($cookies[$cookieName]) && preg_match("/{$pattern}/i", $cookies[$cookieName])) {
-               return true;
+            if (isset($cookies[$cookieName]) && preg_match("~{$pattern}~i", $cookies[$cookieName])) {
+                return true;
             }
         }
         return false;
@@ -255,16 +255,17 @@ class Wappalyzer
     {
         $patterns = $technology['dom'] ?? [];
         $crawler = new Crawler($body);
-        foreach (is_array($patterns) ? array_keys($patterns) : [$patterns] as $pattern) {
-            foreach ($pattern as $selector) {
-                try {
-                    $results = $crawler->filter($selector);
-                    if ($results->count() > 0) {
-                        return true;
-                    }
-                } catch (\Exception $e) { }
-            }
+        if (is_array($patterns)) {
+            return false;
         }
+
+        try {
+            $results = $crawler->filter($patterns);
+            if ($results->count() > 0) {
+                return true;
+            }
+        } catch (\Exception $e) { }
+
         return false;
     }
 }
